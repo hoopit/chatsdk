@@ -45,7 +45,7 @@ dependencies {
 
     def androidComponents = 'a95caa7e8a'
     implementation "com.github.hoopit.android-components:common:$androidComponents"
-    implementation "com.github.hoopit.android-components:firebase-realtime:$androidComponents"
+    api "com.github.hoopit.android-components:firebase-realtime:$androidComponents"
 
     // The latest versions aren't used because of Firebase UI - see: https://github.com/firebase/FirebaseUI-Android/releases
 //    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
