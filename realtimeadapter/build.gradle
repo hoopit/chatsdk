@@ -12,10 +12,10 @@ buildscript {
         google()
         jcenter()
     }
-
-    dependencies {
-        classpath "com.github.dcendents:android-maven-gradle-plugin:$maven_gradle_version"
-    }
+//
+//    dependencies {
+//        classpath "com.github.dcendents:android-maven-gradle-plugin:$maven_gradle_version"
+//    }
 }
 
 android {
