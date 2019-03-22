@@ -43,7 +43,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    def androidComponents = 'a95caa7e8a'
+    def androidComponents = '881c746ea9'
     implementation "com.github.hoopit.android-components:common:$androidComponents"
     api "com.github.hoopit.android-components:firebase-realtime:$androidComponents"
 

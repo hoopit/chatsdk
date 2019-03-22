@@ -1,7 +1,6 @@
 package io.hoopit.chatsdk.realtimeadapter.repository
 
 import androidx.lifecycle.LiveData
-import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.IgnoreExtraProperties
 import com.google.firebase.database.PropertyName
@@ -12,6 +11,7 @@ import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource
 import io.hoopit.android.firebaserealtime.core.FirebaseScopedResource
 import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
+import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
 
 // TODO: map of Type -> DatabaseRef
@@ -32,6 +32,7 @@ open class Thread : FirebaseCompositeResource(10000) {
     val otherUser by lazy { users.mapUpdate { list -> list.firstOrNull { !it.isSelf() } } }
 
     val userStatus by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it != null } } }
+
     val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
 
     fun getDisplayName(): LiveData<String> {
@@ -141,9 +142,10 @@ class Message : FirebaseScopedResource(10000) {
         if (read?.get(uid)?.status == ReadStatus.DELIVERED) return
         ref.child("read")
             .updateChildren(
-                mapOf(uid to ReadStatus(
-                    newStatus
-                )
+                mapOf(
+                    uid to ReadStatus(
+                        newStatus
+                    )
                 )
             )
     }
@@ -188,10 +190,10 @@ class OnlineStatus {
 @IgnoreExtraProperties
 class Meta {
 
+    var id: Int? = null
     var name: String? = null
 
     @PropertyName("last-online")
     var lastOnline: String? = null
 
-    var id: String? = null
 }
