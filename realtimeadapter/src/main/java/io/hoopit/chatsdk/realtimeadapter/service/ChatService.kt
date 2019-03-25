@@ -1,8 +1,5 @@
 package io.hoopit.chatsdk.realtimeadapter.service
 
-import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
-import io.hoopit.chatsdk.realtimeadapter.repository.Message
-import io.hoopit.chatsdk.realtimeadapter.repository.ThreadDetails
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -10,11 +7,14 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.PropertyName
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
-import io.hoopit.chatsdk.realtimeadapter.getUserId
 import io.hoopit.android.firebaserealtime.ext.updateChildren
+import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
+import io.hoopit.chatsdk.realtimeadapter.getUserId
+import io.hoopit.chatsdk.realtimeadapter.repository.Message
+import io.hoopit.chatsdk.realtimeadapter.repository.ThreadDetails
+import io.hoopit.chatsdk.realtimeadapter.requireUserId
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import io.hoopit.chatsdk.realtimeadapter.requireUserId
 import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -50,10 +50,6 @@ class ChatService {
             payload = payload
         )
         FirebasePaths.threadMessagesRef(threadId).push().setValue(message)
-            .addOnSuccessListener {
-                FirebasePaths.threadUpdatedRef(threadId).updateChildren(mapOf("messages" to ServerValue.TIMESTAMP))
-                FirebasePaths.threadLastMessageRef(threadId).setValue(message)
-            }
     }
 
     suspend fun setOnline() = coroutineScope {
