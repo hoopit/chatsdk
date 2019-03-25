@@ -22,9 +22,6 @@ import kotlin.coroutines.suspendCoroutine
 
 class ChatService {
 
-//    private val threadRepository = ThreadRepository.instance
-//    private val threadDao = FirebaseThreadDao.instance
-
     companion object {
         val instance = ChatService()
     }
@@ -73,31 +70,6 @@ class ChatService {
                 onDisconnect().removeValue()
                 safeSetValue(onlineData)
             }
-        }
-//        launch {
-//            FirebasePaths.userMetaRef(user.uid).updateChildren(
-//                mapOf(
-//                    "name" to user.displayName
-//                )
-//            )
-//        }
-    }
-
-    suspend fun updateMeta(meta: Map<String, *>) = coroutineScope {
-        launch {
-            FirebasePaths.userMetaRef(requireUserId()).updateChildren(meta)
-        }
-    }
-
-    suspend fun setOffline() = coroutineScope {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-            ?: return@coroutineScope
-        launch {
-            FirebasePaths.userOnlineRef(uid).removeValue()
-
-        }
-        launch {
-            FirebasePaths.onlineRef(uid).removeValue()
         }
     }
 
