@@ -11,7 +11,6 @@ import io.hoopit.android.firebaserealtime.ext.updateChildren
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.getUserId
 import io.hoopit.chatsdk.realtimeadapter.repository.Message
-import io.hoopit.chatsdk.realtimeadapter.repository.ThreadDetails
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -49,9 +48,22 @@ class ChatService {
         FirebasePaths.threadMessagesRef(threadId).push().setValue(message)
     }
 
+    suspend fun setOffline() = coroutineScope {
+        val user = FirebaseAuth.getInstance().currentUser ?: return@coroutineScope
+        launch {
+            FirebasePaths.userOnlineRef(user.uid).apply {
+                removeValue()
+            }
+        }
+        launch {
+            FirebasePaths.onlineRef(user.uid).apply {
+                removeValue()
+            }
+        }
+    }
+
     suspend fun setOnline() = coroutineScope {
-        val user = FirebaseAuth.getInstance().currentUser
-            ?: return@coroutineScope
+        val user = FirebaseAuth.getInstance().currentUser ?: return@coroutineScope
         launch {
             FirebasePaths.userOnlineRef(user.uid).apply {
                 onDisconnect().removeValue()
@@ -63,7 +75,6 @@ class ChatService {
             "time" to ServerValue.TIMESTAMP,
             "uid" to user.uid
         )
-
 
         launch {
             FirebasePaths.onlineRef(user.uid).apply {
@@ -88,7 +99,7 @@ class ChatService {
     private suspend fun createPrivateThread(userIds: List<String>): String {
         val existingThreadId = getExistingThreadId(userIds)
         if (existingThreadId != null) return existingThreadId
-        val newId = pushThread((Thread("")))
+        val newId = pushThread((CreateThread("")))
         addUsers(newId, userIds)
         return newId
     }
@@ -121,7 +132,7 @@ class ChatService {
         }
     }
 
-    private suspend fun pushThread(thread: Thread): String {
+    private suspend fun pushThread(thread: CreateThread): String {
         val threadRef = FirebasePaths.threadRef().push()
         return suspendCoroutine { continuation ->
             threadRef.setValue(thread).addOnCompleteListener {
@@ -136,31 +147,32 @@ class ChatService {
             ?: throw IllegalArgumentException("Cannot create thread with self")
 
         return suspendCoroutine { continuation ->
-            FirebasePaths.userThreadsRef(requireUserId()).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onCancelled(error: DatabaseError) {
-                    Timber.w(error.toException())
-                }
-
-                override fun onDataChange(ownThreads: DataSnapshot) {
-                    if (!ownThreads.hasChildren()) {
-                        continuation.resume(null)
-                        return
+            FirebasePaths.userThreadsRef(requireUserId())
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onCancelled(error: DatabaseError) {
+                        Timber.w(error.toException())
                     }
-                    FirebasePaths.userThreadsRef(otherUserId)
-                        .addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onCancelled(error: DatabaseError) {
-                                Timber.w(error.toException())
-                            }
 
-                            override fun onDataChange(otherThreads: DataSnapshot) {
-                                val exists = ownThreads.children.firstOrNull {
-                                    otherThreads.hasChild(requireNotNull(it.key))
+                    override fun onDataChange(ownThreads: DataSnapshot) {
+                        if (!ownThreads.hasChildren()) {
+                            continuation.resume(null)
+                            return
+                        }
+                        FirebasePaths.userThreadsRef(otherUserId)
+                            .addListenerForSingleValueEvent(object : ValueEventListener {
+                                override fun onCancelled(error: DatabaseError) {
+                                    Timber.w(error.toException())
                                 }
-                                continuation.resume(exists?.key)
-                            }
-                        })
-                }
-            })
+
+                                override fun onDataChange(otherThreads: DataSnapshot) {
+                                    val exists = ownThreads.children.firstOrNull {
+                                        otherThreads.hasChild(requireNotNull(it.key))
+                                    }
+                                    continuation.resume(exists?.key)
+                                }
+                            })
+                    }
+                })
         }
     }
 
@@ -176,9 +188,26 @@ data class ThreadInvitation(val invitedById: String)
 
 data class ThreadParticipant(val status: String)
 
-class Thread(name: String) {
-    val details = ThreadDetails().also { it.name = name }
+class CreateThread(name: String) {
+    val details = ThreadDetails(name)
     val users = listOf<String>()
+    val updated = Updated()
+
+    class Updated {
+        var users = ServerValue.TIMESTAMP
+        var details = ServerValue.TIMESTAMP
+    }
+
+    class ThreadDetails(var name: String) {
+        val type = 0
+        val type_v4 = 2
+
+        @get:PropertyName("creator-entity-id")
+        @set:PropertyName("creator-entity-id")
+        var creatorEntityId = requireUserId()
+
+        var creationDate = ServerValue.TIMESTAMP
+    }
 }
 
 suspend fun DatabaseReference.safeSetValue(value: Any?) = suspendCoroutine<Boolean> {
