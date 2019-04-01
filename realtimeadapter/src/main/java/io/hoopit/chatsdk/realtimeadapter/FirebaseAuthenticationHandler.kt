@@ -1,8 +1,8 @@
 package io.hoopit.chatsdk.realtimeadapter
 
-import io.hoopit.chatsdk.realtimeadapter.service.ChatService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import io.hoopit.chatsdk.realtimeadapter.service.ChatService
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
@@ -96,7 +96,7 @@ class FirebaseAuthenticationHandler {
 //    }
 
     private suspend fun authenticateWithUser(user: FirebaseUser) {
-        ChatService.instance.setOnline()
+        ChatService.instance.setOnline(GlobalScope)
 
 //        authenticatedThisSession = true
 //        loginInfo = mapOf(AuthKeys.CurrentUserID to user.uid)

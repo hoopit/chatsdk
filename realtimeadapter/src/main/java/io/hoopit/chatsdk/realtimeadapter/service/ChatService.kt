@@ -10,9 +10,8 @@ import com.google.firebase.database.ValueEventListener
 import io.hoopit.android.firebaserealtime.ext.updateChildren
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.getUserId
-import io.hoopit.chatsdk.realtimeadapter.repository.Message
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.coroutines.resume
@@ -25,20 +24,6 @@ class ChatService {
         val instance = ChatService()
     }
 
-    class NewMessage(
-        @get:PropertyName("user-firebase-id")
-        @set:PropertyName("user-firebase-id")
-        var userFirebaseId: String,
-        payload: String
-    ) {
-        val type = 0
-        val date: MutableMap<String, String> = ServerValue.TIMESTAMP
-        val json_v2 = mapOf("text" to payload)
-        val read = mapOf(
-            userFirebaseId to Message.ReadStatus(Message.ReadStatus.READ)
-        )
-    }
-
     fun send(payload: String, threadId: String) {
         if (payload.isBlank()) return
         val message = NewMessage(
@@ -48,12 +33,10 @@ class ChatService {
         FirebasePaths.threadMessagesRef(threadId).push().setValue(message)
     }
 
-    suspend fun setOffline() = coroutineScope {
-        val user = FirebaseAuth.getInstance().currentUser ?: return@coroutineScope
+    fun setOffline(scope: CoroutineScope) = scope.launch {
+        val user = FirebaseAuth.getInstance().currentUser ?: return@launch
         launch {
-            FirebasePaths.userOnlineRef(user.uid).apply {
-                removeValue()
-            }
+            FirebasePaths.userOnlineRef(user.uid).setValue(false)
         }
         launch {
             FirebasePaths.onlineRef(user.uid).apply {
@@ -62,11 +45,11 @@ class ChatService {
         }
     }
 
-    suspend fun setOnline() = coroutineScope {
-        val user = FirebaseAuth.getInstance().currentUser ?: return@coroutineScope
+    fun setOnline(scope: CoroutineScope) = scope.launch {
+        val user = FirebaseAuth.getInstance().currentUser ?: return@launch
         launch {
             FirebasePaths.userOnlineRef(user.uid).apply {
-                onDisconnect().removeValue()
+                onDisconnect().setValue(false)
                 safeSetValue(true)
             }
         }
@@ -85,7 +68,6 @@ class ChatService {
     }
 
     suspend fun createThread(userIds: Collection<String>, threadName: String? = null): String {
-        // TODO: add user to list
         val userSet = userIds.toHashSet()
         userSet.add(requireUserId())
         return if (userSet.size == 2) createPrivateThread(userSet.toList())
@@ -99,7 +81,7 @@ class ChatService {
     private suspend fun createPrivateThread(userIds: List<String>): String {
         val existingThreadId = getExistingThreadId(userIds)
         if (existingThreadId != null) return existingThreadId
-        val newId = pushThread((CreateThread("")))
+        val newId = pushThread((NewThread("")))
         addUsers(newId, userIds)
         return newId
     }
@@ -119,6 +101,7 @@ class ChatService {
                 FirebasePaths.userThreadsRef(userId).child(threadId) to ThreadInvitation(
                     requireUserId()
                 ),
+                FirebasePaths.userRef(userId).child("updated/threads") to ServerValue.TIMESTAMP,
                 FirebasePaths.threadUsersRef(threadId).child(userId) to ThreadParticipant(
                     realStatus
                 )
@@ -132,7 +115,7 @@ class ChatService {
         }
     }
 
-    private suspend fun pushThread(thread: CreateThread): String {
+    private suspend fun pushThread(thread: NewThread): String {
         val threadRef = FirebasePaths.threadRef().push()
         return suspendCoroutine { continuation ->
             threadRef.setValue(thread).addOnCompleteListener {
@@ -188,25 +171,27 @@ data class ThreadInvitation(val invitedById: String)
 
 data class ThreadParticipant(val status: String)
 
-class CreateThread(name: String) {
+@Suppress("unused")
+class NewThread(name: String) {
     val details = ThreadDetails(name)
     val users = listOf<String>()
     val updated = Updated()
 
-    class Updated {
-        var users = ServerValue.TIMESTAMP
-        var details = ServerValue.TIMESTAMP
-    }
+    data class Updated(
+        val users: MutableMap<String, String?> = ServerValue.TIMESTAMP,
+        val details: MutableMap<String, String?> = ServerValue.TIMESTAMP
+    )
 
-    class ThreadDetails(var name: String) {
+    data class ThreadDetails(val name: String) {
         val type = 0
-        val type_v4 = 2
+
+        @get:PropertyName("type_v4")
+        val typeV4 = 2
 
         @get:PropertyName("creator-entity-id")
-        @set:PropertyName("creator-entity-id")
-        var creatorEntityId = requireUserId()
+        val creatorEntityId = requireUserId()
 
-        var creationDate = ServerValue.TIMESTAMP
+        val creationDate: MutableMap<String, String?> = ServerValue.TIMESTAMP
     }
 }
 
