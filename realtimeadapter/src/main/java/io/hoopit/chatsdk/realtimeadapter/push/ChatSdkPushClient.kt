@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.PowerManager
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import io.hoopit.chatsdk.realtimeadapter.Config
 import io.hoopit.chatsdk.realtimeadapter.Config.chatSdkMessageChannel
 import io.hoopit.chatsdk.realtimeadapter.R
@@ -34,7 +35,7 @@ class ChatSdkPushClient {
         val title = data[PUSH_TITLE] ?: ""
         val body = data[PUSH_BODY] ?: ""
         val intent = Intent(application, Config.pushActivity.java)
-        intent.putExtra(PUSH_THREAD_ID, threadId)
+        intent.putExtra(Config.EXTRA_THREAD_ID, threadId)
 //        intent.action = threadId
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         createMessageNotification(
@@ -61,11 +62,7 @@ class ChatSdkPushClient {
 
         val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(context, notificationManager)
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) createNotificationChannel(context)
 
         val pendingIntent =
             PendingIntent.getActivity(context, 0, resultIntent, PendingIntent.FLAG_CANCEL_CURRENT)
@@ -117,7 +114,7 @@ class ChatSdkPushClient {
 
         notification.flags = Notification.FLAG_AUTO_CANCEL
 
-        // TODO: set to sender ID, group all from same sender
+        val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.notify(messageNotificationId, notification)
 
         // TODO: check this
@@ -126,16 +123,15 @@ class ChatSdkPushClient {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun createNotificationChannel(
-        context: Context,
-        notificationManager: NotificationManager
+        context: Context
     ) {
-        if (notificationManager.getNotificationChannel(chatSdkMessageChannel) == null) return
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.getNotificationChannel(chatSdkMessageChannel) != null) return
 
         val name = context.getString(R.string.chatsdk_notification_channel_name)
         val description = context.getString(R.string.chatsdk_notification_channel_description)
 
-        val channel =
-            NotificationChannel(chatSdkMessageChannel, name, NotificationManager.IMPORTANCE_HIGH)
+        val channel = NotificationChannel(chatSdkMessageChannel, name, NotificationManager.IMPORTANCE_DEFAULT)
         channel.enableVibration(true)
         channel.enableLights(true)
         channel.description = description
@@ -162,8 +158,8 @@ class ChatSdkPushClient {
 
             val wl = pm.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK
-                        or PowerManager.ON_AFTER_RELEASE
-                        or PowerManager.ACQUIRE_CAUSES_WAKEUP, "chat-sdk:MyLock"
+                    or PowerManager.ON_AFTER_RELEASE
+                    or PowerManager.ACQUIRE_CAUSES_WAKEUP, "chat-sdk:MyLock"
             )
 
             wl.acquire(5000)

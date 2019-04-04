@@ -17,5 +17,7 @@ object Config {
     @ColorInt
     var notificationLedColor: Int? = null
 
-    var chatSdkMessageChannel = "co.chatsdk.notification.Message"
+    var chatSdkMessageChannel = "io.hoopit.chatsdk"
+
+    const val EXTRA_THREAD_ID = "io.hoopit.chatsdk.thread_id"
 }
