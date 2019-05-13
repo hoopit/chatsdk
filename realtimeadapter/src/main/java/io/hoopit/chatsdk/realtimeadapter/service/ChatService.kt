@@ -67,11 +67,14 @@ class ChatService {
         }
     }
 
-    suspend fun createThread(userIds: Collection<String>, threadName: String? = null): String {
+    suspend fun createThread(userIds: Collection<String>, threadName: String? = null): String? {
         val userSet = userIds.toHashSet()
         userSet.add(requireUserId())
-        return if (userSet.size == 2) createPrivateThread(userSet.toList())
-        else createGroupThread(userSet.toList(), threadName)
+        return when {
+            userSet.size < 2 -> null
+            userSet.size == 2 -> createPrivateThread(userSet.toList())
+            else -> createGroupThread(userSet.toList(), threadName)
+        }
     }
 
     private suspend fun createGroupThread(toList: List<String>, threadName: String?): String {
