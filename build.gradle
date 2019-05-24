@@ -35,7 +35,7 @@ ext {
     firebase_auth_version = "16.2.0"
     androidx_lifecycle = "2.1.0-beta01"
     rxkotlin_version = '2.3.0'
-    lifecycle_version = '2.1.0-beta01'
+    lifecycle_version = '2.0.0'
 }
 
 task clean(type: Delete) {
