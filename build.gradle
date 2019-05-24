@@ -29,7 +29,7 @@ ext {
 //    firebase_database_version = "16.0.5"
     maven_gradle_version = "2.1"
     timber_version = "4.7.1"
-    android_components_version = '20a73a483e'
+    android_components_version = '4c0ec357e6'
     coroutines_version = '1.2.1'
     firebase_database_version = "16.1.0"
     firebase_auth_version = "16.2.0"
