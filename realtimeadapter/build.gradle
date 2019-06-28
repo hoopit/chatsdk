@@ -48,8 +48,9 @@ dependencies {
 
     // The latest versions aren't used because of Firebase UI - see: https://github.com/firebase/FirebaseUI-Android/releases
 //    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
-    api "com.google.firebase:firebase-database:$firebase_database_version"
-    api "com.google.firebase:firebase-auth:$firebase_auth_version"
+    implementation platform("com.google.firebase:firebase-bom:$firebase_bom_version")
+    implementation "com.google.firebase:firebase-database"
+    implementation "com.google.firebase:firebase-auth"
 
     implementation "com.jakewharton.timber:timber:$timber_version"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"

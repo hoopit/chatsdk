@@ -25,16 +25,13 @@ allprojects {
 }
 
 ext {
-//    firebase_core_version = "16.0.4"
-//    firebase_database_version = "16.0.5"
     maven_gradle_version = "2.1"
     timber_version = "4.7.1"
     android_components_version = 'eb31fa1fdf'
     coroutines_version = '1.2.2'
-    firebase_database_version = "18.0.0"
-    firebase_auth_version = "18.0.0"
     rxkotlin_version = '2.3.0'
     lifecycle_version = '2.1.0-beta01'
+    firebase_bom_version = '20.1.0'
 }
 
 task clean(type: Delete) {

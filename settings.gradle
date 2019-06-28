@@ -1,1 +1,2 @@
-include ':app', ':realtimeadapter'
+//include ':app'
+include ':realtimeadapter'
