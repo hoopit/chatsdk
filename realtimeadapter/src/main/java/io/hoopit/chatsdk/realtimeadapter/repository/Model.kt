@@ -1,6 +1,7 @@
 package io.hoopit.chatsdk.realtimeadapter.repository
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.IgnoreExtraProperties
 import com.google.firebase.database.PropertyName
@@ -35,10 +36,24 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
 
-    fun getDisplayName(): LiveData<String> {
-        return users.switchMap { list ->
-            list.firstOrNull { !it.isSelf() }?.meta?.map { it?.name ?: "Unknown" }
+    fun getDisplayName(): LiveData<String?> {
+        val name = MediatorLiveData<String>()
+        val names = mutableMapOf<String, String?>()
+        val liveData = mutableListOf<LiveData<*>>()
+        name.addSource(users) { list ->
+            names.clear()
+            liveData.forEach { name.removeSource(it) }
+            liveData.clear()
+            list.filter { !it.isSelf() }
+                .forEach { entry ->
+                    liveData.add(entry.meta)
+                    name.addSource(entry.meta) {
+                        names[entry.entityId] = it?.name
+                        name.value = names.values.joinToString()
+                    }
+                }
         }
+        return name
     }
 
     fun isTyping() = otherUser.map { it?.typing ?: false }
@@ -195,5 +210,4 @@ class Meta {
 
     @PropertyName("last-online")
     var lastOnline: String? = null
-
 }
