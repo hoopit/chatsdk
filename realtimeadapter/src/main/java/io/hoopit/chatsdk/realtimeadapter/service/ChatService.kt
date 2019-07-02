@@ -89,7 +89,7 @@ class ChatService {
         return newId
     }
 
-    private suspend fun addUsers(threadId: String, userIds: List<String>): List<String> {
+    suspend fun addUsers(threadId: String, userIds: List<String>): List<String> {
         userIds.forEach {
             addUser(threadId, it)
         }
