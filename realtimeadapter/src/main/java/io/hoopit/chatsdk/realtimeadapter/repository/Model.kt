@@ -14,6 +14,8 @@ import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 // TODO: map of Type -> DatabaseRef
 open class Thread : FirebaseCompositeResource(10000) {
@@ -36,34 +38,65 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
 
+    /**
+     * The display name of the conversation.
+     * Can be manually set manually, and defaults to a concatenation of all users in the conversation.
+     */
     fun getDisplayName(): LiveData<String?> {
         val name = MediatorLiveData<String>()
         val names = mutableMapOf<String, String?>()
         val liveData = mutableListOf<LiveData<*>>()
-        name.addSource(users) { list ->
-            names.clear()
-            liveData.forEach { name.removeSource(it) }
-            liveData.clear()
-            list.filter { !it.isSelf() }
-                .forEach { entry ->
-                    liveData.add(entry.meta)
-                    name.addSource(entry.meta) {
-                        names[entry.entityId] = it?.name
-                        name.value = names.values.joinToString()
-                    }
-                }
+        name.addSource(details.map { it?.name }) {
+            if (it.isNullOrBlank()) {
+                // TODO: avoid removing this unnecessarily
+                name.removeSource(users)
+                name.addSource(users, fun(list: List<ThreadUser>) {
+                    names.clear()
+                    liveData.forEach { name.removeSource(it) }
+                    liveData.clear()
+                    list.filter { !it.isSelf() }
+                        .forEach { entry ->
+                            liveData.add(entry.meta)
+                            name.addSource(entry.meta) {
+                                names[entry.entityId] = it?.name
+                                name.value = names.values.joinToString()
+                            }
+                        }
+                })
+            } else {
+                name.removeSource(users)
+                name.value = it
+            }
         }
         return name
     }
 
+    /**
+     * Whether the other user is typing or not.
+     */
+    // TODO: return which user is typing
     fun isTyping() = otherUser.map { it?.typing ?: false }
 
+    /**
+     * Set the typing status for the current user.
+     */
     fun setTyping(typing: Boolean) {
         ref.child("users")
             .child(requireNotNull(FirebaseAuth.getInstance().uid)).apply {
                 updateChildren(mapOf("typing" to typing))
                 onDisconnect().updateChildren(mapOf("typing" to false))
             }
+    }
+
+    /**
+     * Set the conversation name.
+     * Only valid for group channels.
+     */
+    suspend fun setName(text: String) = suspendCoroutine<Boolean> { c ->
+        ref.child("details").updateChildren(mapOf("name" to text)).continueWith {
+            if (it.isSuccessful) c.resume(true)
+            else c.resume(false)
+        }
     }
 }
 
