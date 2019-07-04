@@ -26,6 +26,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        configurations.all { t ->
+            substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
+        }
     }
 
     buildTypes {
@@ -49,6 +52,7 @@ dependencies {
     // The latest versions aren't used because of Firebase UI - see: https://github.com/firebase/FirebaseUI-Android/releases
 //    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
     implementation platform("com.google.firebase:firebase-bom:$firebase_bom_version")
+    api "com.google.firebase:firebase-core"
     api "com.google.firebase:firebase-database"
     api "com.google.firebase:firebase-auth"
 
