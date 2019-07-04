@@ -54,6 +54,8 @@ open class Thread : FirebaseCompositeResource(10000) {
         }
     }
 
+    val isGroupThread by lazy { users.map { it.size > 2 } }
+
     /**
      * The display name of the conversation.
      * Can be manually set manually, and defaults to a concatenation of all users in the conversation.
