@@ -72,8 +72,7 @@ class ChatService {
         userSet.add(requireUserId())
         return when {
             userSet.size < 2 -> null
-            userSet.size == 2 -> createPrivateThread(userSet.toList())
-            else -> createGroupThread(userSet.toList(), threadName)
+            else -> createPrivateThread(userSet.toList(), threadName)
         }
     }
 
@@ -81,7 +80,7 @@ class ChatService {
         TODO("not implemented")
     }
 
-    private suspend fun createPrivateThread(userIds: List<String>): String {
+    private suspend fun createPrivateThread(userIds: List<String>, threadName: String?): String {
         val existingThreadId = getExistingThreadId(userIds)
         if (existingThreadId != null) return existingThreadId
         val newId = pushThread((NewThread("")))
@@ -128,11 +127,11 @@ class ChatService {
         }
     }
 
-    private suspend fun getExistingThreadId(users: List<String>): String? {
-        val otherUserId = users.firstOrNull { it != getUserId() }
-            ?: throw IllegalArgumentException("Cannot create thread with self")
-
-        return suspendCoroutine { continuation ->
+    private suspend fun getExistingThreadId(users: List<String>): String? =
+        suspendCoroutine { continuation ->
+            val otherUserId = users.firstOrNull { it != getUserId() }
+                ?: throw IllegalArgumentException("Cannot create thread with self")
+            // TODO: refactor with extension functions
             FirebasePaths.userThreadsRef(requireUserId())
                 .addListenerForSingleValueEvent(object : ValueEventListener {
                     override fun onCancelled(error: DatabaseError) {
@@ -160,7 +159,6 @@ class ChatService {
                     }
                 })
         }
-    }
 
     fun deleteThread(id: String) {
         TODO("not implemented")

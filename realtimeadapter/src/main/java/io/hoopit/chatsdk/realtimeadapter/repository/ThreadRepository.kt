@@ -4,7 +4,7 @@ import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.resource.FirebaseResource
 import io.hoopit.chatsdk.realtimeadapter.resource.IResource
 import io.hoopit.android.common.liveData
-import io.hoopit.android.firebaserealtime.ext.orderByChild
+import io.hoopit.android.firebaserealtime.ext.orderByChildProperty
 import io.hoopit.android.firebaserealtime.lifecycle.FirebaseListLiveData
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
 
@@ -19,7 +19,7 @@ class ThreadRepository {
             FirebasePaths.userThreadsRef(requireUserId()),
             Thread::class,
             10000
-        ).orderByChild(
+        ).orderByChildProperty(
             { it.lastMessage },
             { requireNotNull(it.date) }
         )

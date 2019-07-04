@@ -9,7 +9,7 @@
 //
 //    fun getUserThreads(userId: String): LiveData<List<Thread>> {
 //        val list = getList(FirebasePaths.userThreadsRef(userId).orderByKey()) { it.entityId }
-//        return list.orderByChild(
+//        return list.orderByChildProperty(
 //            { it.lastMessage },
 //            { requireNotNull(it.date) }
 //        )

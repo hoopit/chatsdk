@@ -14,6 +14,8 @@ import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -23,7 +25,7 @@ open class Thread : FirebaseCompositeResource(10000) {
     val details by firebaseValue<ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
 
 //    val lastMessage by firebaseList<Message> {
-//        FirebasePaths.threadMessagesRef(entityId).orderByChild("date").limitToLast(1)
+//        FirebasePaths.threadMessagesRef(entityId).orderByChildProperty("date").limitToLast(1)
 //    }.map { messages -> messages.map { it.firstOrNull() } }
 
     val lastMessage by firebaseValue<Message> { FirebasePaths.threadLastMessageRef(entityId) }
@@ -38,37 +40,51 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
 
+    suspend fun leaveThread() = withContext(Dispatchers.IO) {
+        suspendCoroutine<Boolean> { c ->
+            FirebasePaths.threadUsersRef(entityId).child(requireUserId())
+                .removeValue().continueWith { task ->
+                    if (task.isSuccessful) {
+                        FirebasePaths.userThreadsRef(requireUserId()).child(entityId).removeValue()
+                            .continueWith {
+                                c.resume(it.isSuccessful)
+                            }
+                    }
+                }
+        }
+    }
+
     /**
      * The display name of the conversation.
      * Can be manually set manually, and defaults to a concatenation of all users in the conversation.
      */
     fun getDisplayName(): LiveData<String?> {
-        val name = MediatorLiveData<String>()
+        val displayName = MediatorLiveData<String>()
         val names = mutableMapOf<String, String?>()
         val liveData = mutableListOf<LiveData<*>>()
-        name.addSource(details.map { it?.name }) {
-            if (it.isNullOrBlank()) {
+        displayName.addSource(details.map { it?.name }) { threadName ->
+            if (threadName.isNullOrBlank()) {
                 // TODO: avoid removing this unnecessarily
-                name.removeSource(users)
-                name.addSource(users, fun(list: List<ThreadUser>) {
+                displayName.removeSource(users)
+                displayName.addSource(users, fun(list: List<ThreadUser>) {
                     names.clear()
-                    liveData.forEach { name.removeSource(it) }
+                    liveData.forEach { displayName.removeSource(it) }
                     liveData.clear()
                     list.filter { !it.isSelf() }
                         .forEach { entry ->
                             liveData.add(entry.meta)
-                            name.addSource(entry.meta) {
+                            displayName.addSource(entry.meta) {
                                 names[entry.entityId] = it?.name
-                                name.value = names.values.joinToString()
+                                displayName.value = names.values.joinToString()
                             }
                         }
                 })
             } else {
-                name.removeSource(users)
-                name.value = it
+                displayName.removeSource(users)
+                displayName.value = threadName
             }
         }
-        return name
+        return displayName
     }
 
     /**
@@ -103,7 +119,7 @@ open class Thread : FirebaseCompositeResource(10000) {
 // TODO: implement paged list delegate
 //    val messages by lazy {
 //        FirebasePagedListResource(
-//                FirebasePaths.threadMessagesRef(requireNotNull(entityId)).orderByChild("date").limitToLast(50),
+//                FirebasePaths.threadMessagesRef(requireNotNull(entityId)).orderByChildProperty("date").limitToLast(50),
 //                Message::class.java
 //        ) {
 //            it.entityId ?: throw IllegalStateException("Creation date must be set")
