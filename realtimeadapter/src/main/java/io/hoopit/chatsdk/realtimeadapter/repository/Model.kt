@@ -2,10 +2,10 @@ package io.hoopit.chatsdk.realtimeadapter.repository
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.map
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.IgnoreExtraProperties
 import com.google.firebase.database.PropertyName
-import io.hoopit.android.common.map
 import io.hoopit.android.common.mapUpdate
 import io.hoopit.android.common.switchMap
 import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource

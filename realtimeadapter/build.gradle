@@ -26,9 +26,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        configurations.all { t ->
-            substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
-        }
+//        configurations.all { t ->
+//            substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
+//        }
     }
 
     buildTypes {
@@ -49,8 +49,6 @@ dependencies {
     implementation "com.github.hoopit.android-components:common:$android_components_version"
     api "com.github.hoopit.android-components:firebase-realtime:$android_components_version"
 
-    // The latest versions aren't used because of Firebase UI - see: https://github.com/firebase/FirebaseUI-Android/releases
-//    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
     implementation platform("com.google.firebase:firebase-bom:$firebase_bom_version")
     api "com.google.firebase:firebase-core"
     api "com.google.firebase:firebase-database"
@@ -60,7 +58,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
-    implementation "androidx.lifecycle:lifecycle-reactivestreams-ktx:$lifecycle_version"
+//    implementation "androidx.lifecycle:lifecycle-reactivestreams-ktx:$lifecycle_version"
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
+//    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+//    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx::2.2.0-alpha01"
+
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
