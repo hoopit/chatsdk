@@ -33,6 +33,9 @@ class ChatService {
         FirebasePaths.threadMessagesRef(threadId).push().setValue(message)
     }
 
+    suspend fun getUnreadThreads() {
+    }
+
     fun setOffline(scope: CoroutineScope) = scope.launch {
         val user = FirebaseAuth.getInstance().currentUser ?: return@launch
         launch {
