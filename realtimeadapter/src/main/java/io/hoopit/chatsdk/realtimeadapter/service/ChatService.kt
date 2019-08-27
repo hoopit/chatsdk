@@ -1,5 +1,7 @@
 package io.hoopit.chatsdk.realtimeadapter.service
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -7,9 +9,13 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.PropertyName
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
+import io.hoopit.android.common.mediatorLiveData
+import io.hoopit.android.common.switchMap
 import io.hoopit.android.firebaserealtime.ext.updateChildren
+import io.hoopit.android.firebaserealtime.lifecycle.FirebaseListLiveData
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.getUserId
+import io.hoopit.chatsdk.realtimeadapter.repository.Thread
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -33,7 +39,32 @@ class ChatService {
         FirebasePaths.threadMessagesRef(threadId).push().setValue(message)
     }
 
-    suspend fun getUnreadThreads() {
+    fun getUnreadThreadCount(): LiveData<Int> {
+        val list = FirebaseListLiveData(
+            FirebasePaths.userThreadsRef(requireUserId()),
+            Thread::class,
+            10000
+        )
+        return list.switchMap { threadList ->
+            val map = mutableMapOf<String, MediatorLiveData<Boolean>>()
+            val numUnread = mediatorLiveData(0)
+
+            threadList.forEach { thread ->
+                val unreadLiveData = map.getOrPut(thread.entityId) {
+                    val live = mediatorLiveData(false)
+                    numUnread.addSource(live) {
+                        numUnread.value = map.values.sumBy {
+                            if (it.value == true) 1 else 0
+                        }
+                    }
+                    live
+                }
+                unreadLiveData.addSource(thread.isUnread) {
+                    unreadLiveData.value = it == true
+                }
+            }
+            return@switchMap numUnread
+        }
     }
 
     fun setOffline(scope: CoroutineScope) = scope.launch {

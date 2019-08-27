@@ -12,6 +12,7 @@ import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource
 import io.hoopit.android.firebaserealtime.core.FirebaseScopedResource
 import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
+import io.hoopit.android.firebaserealtime.model.map
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
 import kotlinx.coroutines.Dispatchers
@@ -24,14 +25,20 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     val details by firebaseValue<ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
 
-//    val lastMessage by firebaseList<Message> {
-//        FirebasePaths.threadMessagesRef(entityId).orderByChildProperty("date").limitToLast(1)
-//    }.map { messages -> messages.map { it.firstOrNull() } }
+    val lastMessage by firebaseList<Message> {
+        FirebasePaths.threadMessagesRef(entityId).orderByChild("date").limitToLast(1)
+    }.map { messages -> messages.map { it.firstOrNull() } }
 
-    val lastMessage by firebaseValue<Message> { FirebasePaths.threadLastMessageRef(entityId) }
+//    val lastMessage by firebaseValue<Message> { FirebasePaths.threadLastMessageRef(entityId) }
 
     val users by firebaseList<ThreadUser> {
         FirebasePaths.threadUsersRef(entityId).orderByKey()
+    }
+
+    val isUnread by lazy {
+        lastMessage.map {
+            it?.isUnread() ?: false
+        }
     }
 
     val otherUser by lazy { users.mapUpdate { list -> list.firstOrNull { !it.isSelf() } } }
@@ -215,6 +222,8 @@ class Message : FirebaseScopedResource(10000) {
                 )
             )
     }
+
+    fun isUnread() = read?.contains(requireUserId())?.not() ?: false
 
     fun isReadByOthers(): Boolean {
         return getReadBy().isNotEmpty()
