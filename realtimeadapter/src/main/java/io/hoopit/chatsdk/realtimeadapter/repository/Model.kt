@@ -213,14 +213,17 @@ class Message : FirebaseScopedResource(10000) {
         val newStatus = if (isFromSelf()) ReadStatus.READ else ReadStatus.READ
         if (read?.get(uid)?.status == ReadStatus.READ) return
         if (read?.get(uid)?.status == ReadStatus.DELIVERED) return
-        ref.child("read")
-            .updateChildren(
-                mapOf(
-                    uid to ReadStatus(
-                        newStatus
-                    )
-                )
+
+        val lastMessageRef =
+            checkNotNull(ref.parent?.parent?.child("lastMessage/read")?.path?.toString())
+        val messageRef = checkNotNull(ref.child("read").path?.toString())
+
+        ref.root.updateChildren(
+            mapOf(
+                "$lastMessageRef/$uid" to ReadStatus(newStatus),
+                "$messageRef/$uid" to ReadStatus(newStatus)
             )
+        )
     }
 
     fun isUnread() = read?.contains(requireUserId())?.not() ?: false
