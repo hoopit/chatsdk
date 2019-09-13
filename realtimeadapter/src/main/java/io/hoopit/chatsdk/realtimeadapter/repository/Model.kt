@@ -181,10 +181,10 @@ class Message : FirebaseScopedResource(10000) {
 
     @get:PropertyName(USER_ID)
     @set:PropertyName(USER_ID)
-    lateinit var userFirebaseId: String
+    var userFirebaseId: String? = null
 
     val sender by firebaseValue<User> {
-        FirebasePaths.userRef(userFirebaseId)
+        userFirebaseId?.let { FirebasePaths.userRef(it) }
     }
 
     override fun toString(): String {
