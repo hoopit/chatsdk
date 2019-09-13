@@ -101,20 +101,24 @@ class ChatService {
         }
     }
 
-    suspend fun createThread(userIds: Collection<String>, threadName: String? = null): String? {
+    suspend fun createThread(userIds: Collection<String>, threadName: String?): String? {
         val userSet = userIds.toHashSet()
         userSet.add(requireUserId())
-        return when {
-            userSet.size < 2 -> null
-            else -> createPrivateThread(userSet.toList(), threadName)
+//        require(userSet.size > 1) { "Need at least two users to create a thread." }
+        return when (userSet.size) {
+            1 -> null
+            2 -> createPrivateThread(userSet.toList())
+            else -> createGroupThread(userSet.toList(), threadName)
         }
     }
 
     private suspend fun createGroupThread(toList: List<String>, threadName: String?): String {
-        TODO("not implemented")
+        val newId = pushThread(NewThread("Group thread", type = 1))
+        addUsers(newId, toList.toHashSet().toList())
+        return newId
     }
 
-    private suspend fun createPrivateThread(userIds: List<String>, threadName: String?): String {
+    private suspend fun createPrivateThread(userIds: List<String>): String {
         val existingThreadId = getExistingThreadId(userIds)
         if (existingThreadId != null) return existingThreadId
         val newId = pushThread((NewThread("")))
@@ -207,8 +211,8 @@ data class ThreadInvitation(val invitedById: String)
 data class ThreadParticipant(val status: String)
 
 @Suppress("unused")
-class NewThread(name: String) {
-    val details = ThreadDetails(name)
+class NewThread(name: String, type: Int = 0) {
+    val details = ThreadDetails(name, type)
     val users = listOf<String>()
     val updated = Updated()
 
@@ -217,8 +221,7 @@ class NewThread(name: String) {
         val details: MutableMap<String, String?> = ServerValue.TIMESTAMP
     )
 
-    data class ThreadDetails(val name: String) {
-        val type = 0
+    data class ThreadDetails(val name: String, val type: Int) {
 
         @get:PropertyName("type_v4")
         val typeV4 = 2
