@@ -101,19 +101,19 @@ class ChatService {
         }
     }
 
-    suspend fun createThread(userIds: Collection<String>, threadName: String?): String? {
+    suspend fun createThread(userIds: Collection<String>, threadName: String? = null): String? {
         val userSet = userIds.toHashSet()
         userSet.add(requireUserId())
 //        require(userSet.size > 1) { "Need at least two users to create a thread." }
         return when (userSet.size) {
             1 -> null
             2 -> createPrivateThread(userSet.toList())
-            else -> createGroupThread(userSet.toList(), threadName)
+            else -> createGroupThread(userSet.toList(), requireNotNull(threadName))
         }
     }
 
-    private suspend fun createGroupThread(toList: List<String>, threadName: String?): String {
-        val newId = pushThread(NewThread("Group thread", type = 1))
+    private suspend fun createGroupThread(toList: List<String>, threadName: String): String {
+        val newId = pushThread(NewThread(threadName, type = 1))
         addUsers(newId, toList.toHashSet().toList())
         return newId
     }
