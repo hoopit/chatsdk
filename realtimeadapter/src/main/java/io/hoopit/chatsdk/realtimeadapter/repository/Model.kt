@@ -58,7 +58,7 @@ open class Thread : FirebaseCompositeResource(10000) {
         }
     }
 
-    val isGroupThread by lazy { users.map { it.size > 2 } }
+    val isGroupThread by lazy { details.map { it?.type == 1 } }
 
     /**
      * The display name of the conversation.
