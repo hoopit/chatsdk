@@ -10,6 +10,7 @@ import io.hoopit.android.common.mapUpdate
 import io.hoopit.android.common.switchMap
 import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource
 import io.hoopit.android.firebaserealtime.core.FirebaseScopedResource
+import io.hoopit.android.firebaserealtime.ext.updateChildren
 import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.android.firebaserealtime.model.map
@@ -148,6 +149,22 @@ class ThreadDetails {
     var typeV4: Int? = null
 }
 
+enum class MessageType(val type: Int) {
+    TEXT(0),
+    LOCATION(1),
+    IMAGE(2),
+    AUDIO(3),
+    VIDEO(4),
+    SYSTEM(5),
+    STICKER(6),
+    FILE(7),
+    CONTACT(8),
+    SNAP(9),
+    SYSTEM__GROUP_CHAT_USER_ADDED(1000),
+    SYSTEM__GROUP_CHAT_USER_REMOVED(1001),
+    SYSTEM__GROUP_CHAT_TITLE_UPDATED(1002),
+}
+
 @IgnoreExtraProperties
 class Message : FirebaseScopedResource(10000) {
 
@@ -158,18 +175,14 @@ class Message : FirebaseScopedResource(10000) {
 
     @get:PropertyName(JSON)
     @set:PropertyName(JSON)
-    var json: JsonPayload? = null
+    var json: Map<String, @JvmSuppressWildcards Any>? = null
 
     var date: Long? = null
 
-    val payload: String?
-        get() = json?.text
+    val text: String?
+        get() = json?.getOrDefault("text", null) as? String
 
     var read: Map<String, ReadStatus>? = null
-
-    class JsonPayload {
-        val text: String? = null
-    }
 
     /**
      * The message type
@@ -185,7 +198,7 @@ class Message : FirebaseScopedResource(10000) {
     }
 
     override fun toString(): String {
-        return payload ?: super.toString()
+        return text ?: super.toString()
     }
 
     fun isFromSelf() = userFirebaseId == requireUserId()
