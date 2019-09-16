@@ -49,15 +49,12 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     suspend fun leaveThread() = withContext(Dispatchers.IO) {
         suspendCoroutine<Boolean> { c ->
-            FirebasePaths.threadUsersRef(entityId).child(requireUserId())
-                .removeValue().continueWith { task ->
-                    if (task.isSuccessful) {
-                        FirebasePaths.userThreadsRef(requireUserId()).child(entityId).removeValue()
-                            .continueWith {
-                                c.resume(it.isSuccessful)
-                            }
-                    }
-                }
+            FirebasePaths.firebaseRawRef().updateChildren(
+                FirebasePaths.userThreadsRef(requireUserId()).child(entityId) to null,
+                FirebasePaths.threadUsersRef(entityId).child(requireUserId()) to null
+            ).addOnCompleteListener {
+                c.resume(it.isSuccessful)
+            }
         }
     }
 
