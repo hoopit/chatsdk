@@ -27,7 +27,9 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         configurations.all { t ->
-            substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
+            if (System.getenv('JITPACK') == null) {
+                substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
+            }
         }
     }
 
