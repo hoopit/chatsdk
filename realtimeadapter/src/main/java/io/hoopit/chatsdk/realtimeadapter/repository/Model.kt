@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.IgnoreExtraProperties
 import com.google.firebase.database.PropertyName
 import io.hoopit.android.common.mapUpdate
+import io.hoopit.android.common.mediatorLiveData
 import io.hoopit.android.common.switchMap
 import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource
 import io.hoopit.android.firebaserealtime.core.FirebaseScopedResource
@@ -15,6 +16,7 @@ import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.android.firebaserealtime.model.map
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
+import io.hoopit.chatsdk.realtimeadapter.service.NewThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -23,29 +25,78 @@ import kotlin.coroutines.suspendCoroutine
 // TODO: map of Type -> DatabaseRef
 open class Thread : FirebaseCompositeResource(10000) {
 
-    val details by firebaseValue<ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
+    /**
+     * Thread details
+     */
+    val details by firebaseValue<NewThread.ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
 
+    /**
+     * The most recent message in the thread
+     */
     val lastMessage by firebaseList<Message> {
         FirebasePaths.threadMessagesRef(entityId).orderByChild("date").limitToLast(1)
     }.map { messages -> messages.map { it.firstOrNull() } }
 
 //    val lastMessage by firebaseValue<Message> { FirebasePaths.threadLastMessageRef(entityId) }
 
+    /**
+     * List of all users in this thread
+     */
     val users by firebaseList<ThreadUser> {
         FirebasePaths.threadUsersRef(entityId).orderByKey()
     }
 
+    /**
+     * True if the thread has any unread messages
+     */
     val isUnread by lazy {
         lastMessage.map {
             it?.isUnread() ?: false
         }
     }
 
-    val otherUser by lazy { users.mapUpdate { list -> list.firstOrNull { !it.isSelf() } } }
+    /**
+     * The first user that is not self
+     */
+    val firstOtherUser by lazy {
+        users.mapUpdate { list ->
+            list.firstOrNull { !it.isSelf() }
+        }
+    }
 
-    val userStatus by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it != null } } }
+    /**
+     * List of other users, excluding self
+     */
+    val otherUsers by lazy {
+        users.mapUpdate { list ->
+            list.filter { !it.isSelf() }
+        }
+    }
 
-    val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
+    /**
+     * True if any other users in the thread are online
+     */
+    val onlineStatus by lazy {
+        otherUsers.switchMap { list ->
+            val liveData = mediatorLiveData(false)
+            val map = mutableMapOf<String, Boolean>()
+            list.forEach { user ->
+                liveData.addSource(user.onlineStatus) {
+                    map[user.entityId] = it != null
+                    liveData.postValue(map.values.any { it })
+                }
+            }
+            liveData
+        }
+    }
+
+//    val userStatus by lazy {
+//        otherUser.switchMap { otherUser ->
+//            otherUser?.onlineStatus?.map { it != null }
+//        }
+//    }
+
+//    val lastActive by lazy { otherUser.switchMap { otherUser -> otherUser?.onlineStatus?.map { it?.time } } }
 
     suspend fun leaveThread() = withContext(Dispatchers.IO) {
         suspendCoroutine<Boolean> { c ->
@@ -94,8 +145,7 @@ open class Thread : FirebaseCompositeResource(10000) {
     /**
      * Whether the other user is typing or not.
      */
-    // TODO: return which user is typing
-    fun isTyping() = otherUser.map { it?.typing ?: false }
+    fun isTyping() = otherUsers.map { list -> list.any { it.typing } }
 
     /**
      * Set the typing status for the current user.
