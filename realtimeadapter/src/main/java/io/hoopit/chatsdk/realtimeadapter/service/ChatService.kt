@@ -11,7 +11,6 @@ import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import io.hoopit.android.common.mediatorLiveData
 import io.hoopit.android.common.switchMap
-import io.hoopit.android.firebaserealtime.ext.updateChildren
 import io.hoopit.android.firebaserealtime.lifecycle.FirebaseListLiveData
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.getUserId
@@ -136,22 +135,14 @@ class ChatService {
     private suspend fun addUser(threadId: String, userId: String, status: String? = null): String {
         return suspendCoroutine { c ->
             val realStatus = status ?: if (requireUserId() == userId) "owner" else "member"
-
-            FirebasePaths.firebaseRawRef().updateChildren(
-                FirebasePaths.userThreadsRef(userId).child(threadId) to ThreadInvitation(
-                    requireUserId()
-                ),
-                FirebasePaths.userRef(userId).child("updated/threads") to ServerValue.TIMESTAMP,
-                FirebasePaths.threadUsersRef(threadId).child(userId) to ThreadParticipant(
-                    realStatus
-                )
-            ).addOnCompleteListener {
-                if (it.isSuccessful) {
-                    c.resume(userId)
-                } else {
-                    c.resumeWithException(requireNotNull(it.exception))
+            FirebasePaths.threadUsersRef(threadId)
+                .updateChildren(
+                    mapOf(userId to ThreadParticipant(realStatus))
+                ) { databaseError: DatabaseError?, _: DatabaseReference ->
+                    databaseError?.let {
+                        c.resumeWithException(it.toException())
+                    } ?: c.resume(userId)
                 }
-            }
         }
     }
 
@@ -197,10 +188,6 @@ class ChatService {
                     }
                 })
         }
-
-    fun deleteThread(id: String) {
-        TODO("not implemented")
-    }
 
     fun deleteMessage(entityId: String) {
     }

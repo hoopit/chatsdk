@@ -10,7 +10,6 @@ import io.hoopit.android.common.mapUpdate
 import io.hoopit.android.common.switchMap
 import io.hoopit.android.firebaserealtime.core.FirebaseCompositeResource
 import io.hoopit.android.firebaserealtime.core.FirebaseScopedResource
-import io.hoopit.android.firebaserealtime.ext.updateChildren
 import io.hoopit.android.firebaserealtime.model.firebaseList
 import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.android.firebaserealtime.model.map
@@ -50,12 +49,10 @@ open class Thread : FirebaseCompositeResource(10000) {
 
     suspend fun leaveThread() = withContext(Dispatchers.IO) {
         suspendCoroutine<Boolean> { c ->
-            FirebasePaths.firebaseRawRef().updateChildren(
-                FirebasePaths.userThreadsRef(requireUserId()).child(entityId) to null,
-                FirebasePaths.threadUsersRef(entityId).child(requireUserId()) to null
-            ).addOnCompleteListener {
-                c.resume(it.isSuccessful)
-            }
+            FirebasePaths.threadUsersRef(entityId).child(requireUserId())
+                .removeValue { databaseError, _ ->
+                    c.resume(databaseError == null)
+                }
         }
     }
 
