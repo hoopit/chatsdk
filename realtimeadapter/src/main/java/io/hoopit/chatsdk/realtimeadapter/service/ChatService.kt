@@ -118,7 +118,9 @@ class ChatService {
     }
 
     private suspend fun createPrivateThread(userIds: List<String>): String {
-        val existingThreadId = getExistingThreadId(userIds)
+        val otherUserId = userIds.firstOrNull { it != getUserId() }
+            ?: throw IllegalArgumentException("Cannot create thread with self")
+        val existingThreadId = tryFindExistingThread(otherUserId)
         if (existingThreadId != null) return existingThreadId
         val newId = pushThread((NewThread("")))
         addUsers(newId, userIds)
@@ -156,12 +158,11 @@ class ChatService {
         }
     }
 
-    private suspend fun getExistingThreadId(users: List<String>): String? =
+    private suspend fun tryFindExistingThread(otherUserId: String): String? =
         suspendCoroutine { continuation ->
-            val otherUserId = users.firstOrNull { it != getUserId() }
-                ?: throw IllegalArgumentException("Cannot create thread with self")
+
             // TODO: refactor with extension functions
-            FirebasePaths.userThreadsRef(requireUserId())
+            FirebasePaths.userThreadsRef(requireUserId()).orderByChild("type").endAt(0.0)
                 .addListenerForSingleValueEvent(object : ValueEventListener {
                     override fun onCancelled(error: DatabaseError) {
                         Timber.w(error.toException())
@@ -172,7 +173,7 @@ class ChatService {
                             continuation.resume(null)
                             return
                         }
-                        FirebasePaths.userThreadsRef(otherUserId)
+                        FirebasePaths.userThreadsRef(otherUserId).orderByChild("type").endAt(0.0)
                             .addListenerForSingleValueEvent(object : ValueEventListener {
                                 override fun onCancelled(error: DatabaseError) {
                                     Timber.w(error.toException())
