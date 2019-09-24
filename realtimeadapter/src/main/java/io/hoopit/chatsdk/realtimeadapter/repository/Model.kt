@@ -16,7 +16,6 @@ import io.hoopit.android.firebaserealtime.model.firebaseValue
 import io.hoopit.android.firebaserealtime.model.map
 import io.hoopit.chatsdk.realtimeadapter.FirebasePaths
 import io.hoopit.chatsdk.realtimeadapter.requireUserId
-import io.hoopit.chatsdk.realtimeadapter.service.NewThread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -28,7 +27,7 @@ open class Thread : FirebaseCompositeResource(10000) {
     /**
      * Thread details
      */
-    val details by firebaseValue<NewThread.ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
+    val details by firebaseValue<ThreadDetails> { FirebasePaths.threadDetailsRef(entityId) }
 
     /**
      * The most recent message in the thread
