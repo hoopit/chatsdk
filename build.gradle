@@ -28,7 +28,7 @@ ext {
     maven_gradle_version = "2.1"
     timber_version = "4.7.1"
     android_components_version = 'b65a43adc4'
-    coroutines_version = '1.3.0'
+    coroutines_version = '1.3.2'
     rxkotlin_version = '2.4.0'
     lifecycle_version = '2.2.0-rc01'
     firebase_bom_version = '24.0.0'
