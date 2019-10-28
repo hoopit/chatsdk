@@ -12,10 +12,6 @@ buildscript {
         google()
         jcenter()
     }
-//
-//    dependencies {
-//        classpath "com.github.dcendents:android-maven-gradle-plugin:$maven_gradle_version"
-//    }
 }
 
 android {
@@ -27,7 +23,7 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         configurations.all { t ->
-            if (System.getenv('JITPACK') == null) {
+            if (System.getenv('JITPACK') && hasProperty('substituteWithLocal')) {
                 substituteWithLocal.call(t, "com.github.hoopit.android-components", null)
             }
         }
