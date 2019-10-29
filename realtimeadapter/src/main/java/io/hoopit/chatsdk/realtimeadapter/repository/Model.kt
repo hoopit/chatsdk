@@ -226,7 +226,7 @@ class Message : FirebaseScopedResource(10000) {
     var date: Long? = null
 
     val text: String?
-        get() = json?.getOrDefault("text", null) as? String
+        get() = json?.get("text") as? String
 
     var read: Map<String, ReadStatus>? = null
 
