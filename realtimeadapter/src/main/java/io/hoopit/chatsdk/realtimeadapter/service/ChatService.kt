@@ -212,7 +212,7 @@ class NewThread(name: String, type: Int = 0) {
     data class ThreadDetails(val name: String, val type: Int) {
 
         @get:PropertyName("type_v4")
-        val typeV4 = type
+        val typeV4: Int = if (type == 0) 2 else 1
 
         @get:PropertyName("creator-entity-id")
         val creatorEntityId = requireUserId()
